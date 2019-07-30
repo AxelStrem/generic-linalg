@@ -17,6 +17,11 @@ public:
 	static auto ptr(const T& v) { return v.begin(); }
 };
 
+template<class T, typename = void> struct CountDimensions
+{  static const int value = 1; };
+template<class T> struct CountDimensions<T, std::void_t<decltype(T::Width+T::Height)>>
+{  static const int value = 2; };
+
 template<class Derived, int N> class GenericAlgebra
 {
 	template<int M, class RHS, class F> Derived& zip_fixed(RHS rhs, const F& func)
@@ -150,23 +155,40 @@ template<class M> MatrixTransposedReference<M> transpose(M& matrix)
 template<class M> MatrixTransposedConstReference<M> transpose(const M& matrix)
 {	return MatrixTransposedConstReference<M>(&matrix); }
 
-template<class LHS, class RHS, class R> void mult_add(R& out, const LHS& vec, const RHS& mat)
+template<class LHS, class RHS, class R> void mult_add(R& out, const LHS& lhs, const RHS& rhs)
 {
-	const int W = RHS::Width;
-	const int H = RHS::Height;
+	if constexpr(CountDimensions<LHS>::value==2)
+	{
+		const int W = LHS::Width;
+		const int H = LHS::Height;
 
-	static_assert(W == LHS::Size);
-	static_assert(H == R::Size);
+		static_assert(H == RHS::Size);
+		static_assert(W == R::Size);
 
-	for(int i = 0; i < H; ++i)
-		for (int j = 0; j < W; ++j)
-		{
-			out.at(i) += mat.at(j, i) * vec.at(j);
-		}
+		for (int i = 0; i < H; ++i)
+			for (int j = 0; j < W; ++j)
+			{
+				out.at(j) += lhs.at(j, i) * rhs.at(i);
+			}
+	}
+	else
+	{
+		const int W = RHS::Width;
+		const int H = RHS::Height;
+
+		static_assert(W == LHS::Size);
+		static_assert(H == R::Size);
+
+		for (int i = 0; i < H; ++i)
+			for (int j = 0; j < W; ++j)
+			{
+				out.at(i) += lhs.at(j) * rhs.at(j, i);
+			}
+	}
 }
 
-template<class LHS, class RHS, class R> void mult(R& out, const LHS& vec, const RHS& mat)
+template<class LHS, class RHS, class R> void mult(R& out, const LHS& lhs, const RHS& rhs)
 {
 	out.clear();
-	return mult_add(out, vec, mat);
+	return mult_add(out, lhs, rhs);
 }
