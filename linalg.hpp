@@ -19,7 +19,7 @@ public:
 
 template<class Derived, int N> class GenericAlgebra
 {
-	template<int M, class RHS, class F> Derived& zip_fixed(const RHS* rhs, const F& func)
+	template<int M, class RHS, class F> Derived& zip_fixed(RHS rhs, const F& func)
 	{
 		auto p1 = ((Derived*)this)->begin();
 		for (int i = 0; i < N; ++i)
@@ -37,6 +37,7 @@ template<class Derived, int N> class GenericAlgebra
 
 public:
 
+	OPERATOR_ASSIGN(=)
 	OPERATOR_ASSIGN(+=)
 	OPERATOR_ASSIGN(-=)
 	OPERATOR_ASSIGN(*=)
@@ -81,9 +82,27 @@ public:
 	      X& at(int j, int i)       { return data[i*W + j]; }
 	const X& at(int j, int i) const { return data[i*W + j]; }
 
+	template<class RHS> Matrix<X,W,H>& operator=(const RHS& rhs)
+	{   return GenericAlgebra<Matrix<X, W, H>, W*H>::operator=(rhs);	}
 };
 
-template<class M> class MatrixTransposedReference
+template<class X, int W, int H> struct TransposedIterator
+{
+	X* data;
+	int offset = 0;
+
+	static int transpose_index(int index)
+	{
+		int j = index % W;
+		int i = index / W;
+		return j * H + i;
+	}
+
+	X& operator[](int index) { return data[transpose_index(index)]; }
+	const X& operator[](int index) const { return data[transpose_index(index)]; }
+};
+
+template<class M> class MatrixTransposedReference : public GenericAlgebra<MatrixTransposedReference<M>, M::Size>
 {
 	M* pM;
 public:
@@ -95,13 +114,16 @@ public:
 	static const int Width = M::Height;
 	static const int Height = M::Width;
 
-	const X* begin() const { return pM->begin(); }
-	const X* end() const { return pM->end(); }
-	X* begin() { return pM->begin(); }
-	X* end() { return pM->end(); }
+	const TransposedIterator<X, Width, Height> begin() const { return TransposedIterator<X, Width, Height>{pM->begin()}; }
+	const TransposedIterator<X, Width, Height> end() const { return TransposedIterator<X, Width, Height>{pM->begin(), Size}; }
+	TransposedIterator<X, Width, Height> begin() { return TransposedIterator<X, Width, Height>{pM->begin()}; }
+	TransposedIterator<X, Width, Height> end()   { return TransposedIterator<X, Width, Height>{pM->begin(), Size}; }
 
 	X& at(int j, int i) { return pM->at(i,j); }
 	const X& at(int j, int i) const { return pM->at(i, j); }
+
+	template<class RHS> MatrixTransposedReference<M>& operator=(const RHS& rhs)
+	{   return GenericAlgebra<MatrixTransposedReference<M>, M::Size>::operator=(rhs);   }
 };
 
 template<class M> class MatrixTransposedConstReference
@@ -116,8 +138,8 @@ public:
 	static const int Width = M::Height;
 	static const int Height = M::Width;
 
-	const X* begin() const { return pM->begin(); }
-	const X* end() const { return pM->end(); }
+	const TransposedIterator<X, Width, Height> begin() const { return TransposedIterator<X, Width, Height>{pM->begin()}; }
+	const TransposedIterator<X, Width, Height> end() const { return TransposedIterator<X, Width, Height>{pM->begin(), Size}; }
 
 	const X& at(int j, int i) const { return pM->at(i, j); }
 };
