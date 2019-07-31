@@ -22,6 +22,11 @@ template<class T, typename = void> struct CountDimensions
 template<class T> struct CountDimensions<T, std::void_t<decltype(T::Width+T::Height)>>
 {  static const int value = 2; };
 
+template<class T, typename = void> struct ScalarType
+{   using type = T;   };
+template<class T> struct CountDimensions<T, std::void_t<typename T::Scalar>>
+{	using type = typename T::Scalar;  };
+
 template<class Derived, int N> class GenericAlgebra
 {
 	template<int M, class RHS, class F> Derived& zip_fixed(RHS rhs, const F& func)
@@ -61,6 +66,7 @@ template<class X, int N> class Vector : public GenericAlgebra<Vector<X,N>, N>
 	X data[N];
 public:
 	static const int Size = N;
+	using Scalar = X;
 
 	const X* begin() const { return data; }
 	const X* end() const { return data + N; }
@@ -78,6 +84,7 @@ public:
 	static const int Size = W*H;
 	static const int Width = W;
 	static const int Height = H;
+	using Scalar = X;
 
 	const X* begin() const { return data; }
 	const X* end() const { return data + Size; }
