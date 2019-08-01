@@ -199,3 +199,43 @@ template<class LHS, class RHS, class R> void mult(R& out, const LHS& lhs, const 
 	out.clear();
 	return mult_add(out, lhs, rhs);
 }
+
+template<class LHS, class RHS, class R> void cross_add(R& out, const LHS& lhs, const RHS& rhs)
+{
+	const int W = R::Width;
+	const int H = R::Height;
+
+	static_assert(W == LHS::Size);
+	static_assert(H == RHS::Size);
+
+	for (int i = 0; i < H; ++i)
+		for (int j = 0; j < W; ++j)
+		{
+			out.at(j, i) += lhs.at(j) * rhs.at(i);
+		}
+}
+
+template<class V1, class V2, class F> void zip(V1 p1, V2 p2, const F& func)
+{
+	constexpr int sz = std::remove_pointer<V1>::type::Size;
+
+	static_assert(sz == std::remove_pointer<V2>::type::Size);
+
+	for (int i = 0; i < sz; ++i)
+	{
+		func(p1->at(i), p2->at(i));
+	}
+}
+
+template<class V1, class V2, class V3, class F> void zip(V1 p1, V2 p2, V3 p3, const F& func)
+{
+	const int sz = std::remove_pointer<V1>::type::Size;
+
+	static_assert(sz == std::remove_pointer<V2>::type::Size);
+	static_assert(sz == std::remove_pointer<V3>::type::Size);
+
+	for (int i = 0; i < sz; ++i)
+	{
+		func(p1->at(i), p2->at(i), p3->at(i));
+	}
+}
