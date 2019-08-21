@@ -2,6 +2,7 @@
 #include <type_traits>
 
 #define OPERATOR_ASSIGN(x) template<class RHS> Derived& operator##x##(const RHS& rhs) { return this->zip(rhs, [](auto& a, const auto& b) { a##x##b; }); }
+#define OPERATOR(x) template<class RHS> friend Derived operator##x##(const Derived& lhs, const RHS& rhs) { Derived val{ lhs }; return val ##x##= rhs; }
 
 template<class T, typename = void> class TestSize
 { 
@@ -24,7 +25,7 @@ template<class T> struct CountDimensions<T, std::void_t<decltype(T::Width+T::Hei
 
 template<class T, typename = void> struct ScalarType
 {   using type = T;   };
-template<class T> struct CountDimensions<T, std::void_t<typename T::Scalar>>
+template<class T> struct ScalarType<T, std::void_t<typename T::Scalar>>
 {	using type = typename T::Scalar;  };
 
 template<class Derived, int N> class GenericAlgebra
@@ -52,6 +53,11 @@ public:
 	OPERATOR_ASSIGN(-=)
 	OPERATOR_ASSIGN(*=)
 	OPERATOR_ASSIGN(/=)
+
+	OPERATOR(+)
+	OPERATOR(-)
+	OPERATOR(*)
+	OPERATOR(/)
 
 	void clear()
 	{
