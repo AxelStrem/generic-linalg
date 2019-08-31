@@ -1,9 +1,6 @@
 #pragma once
 #include <type_traits>
 
-#define OPERATOR_ASSIGN(x) template<class RHS> Derived& operator##x##(const RHS& rhs) { return this->zip(rhs, [](auto& a, const auto& b) { a##x##b; }); }
-#define OPERATOR(x) template<class RHS> friend Derived operator##x##(const Derived& lhs, const RHS& rhs) { Derived val{ lhs }; return val ##x##= rhs; }
-
 template<class T, typename = void> class TestSize
 { 
 public:
@@ -40,24 +37,24 @@ template<class Derived, int N> class GenericAlgebra
 		return *((Derived*)(this));
 	}
 
+public:
+
 	template<class RHS, class F>
 	Derived& zip(const RHS& rhs, const F& func)
 	{
 		return zip_fixed<TestSize<RHS>::value>(TestSize<RHS>::ptr(rhs), func);
 	}
 
-public:
+	template<class RHS> Derived& operator=(const RHS& rhs) { return this->zip(rhs, [](auto& a, const auto& b) { a=b; }); }
+	template<class RHS> Derived& operator+=(const RHS& rhs) { return this->zip(rhs, [](auto& a, const auto& b) { a += b; }); }
+	template<class RHS> Derived& operator-=(const RHS& rhs) { return this->zip(rhs, [](auto& a, const auto& b) { a -= b; }); }
+	template<class RHS> Derived& operator*=(const RHS& rhs) { return this->zip(rhs, [](auto& a, const auto& b) { a *= b; }); }
+	template<class RHS> Derived& operator/=(const RHS& rhs) { return this->zip(rhs, [](auto& a, const auto& b) { a /= b; }); }
 
-	OPERATOR_ASSIGN(=)
-	OPERATOR_ASSIGN(+=)
-	OPERATOR_ASSIGN(-=)
-	OPERATOR_ASSIGN(*=)
-	OPERATOR_ASSIGN(/=)
-
-	OPERATOR(+)
-	OPERATOR(-)
-	OPERATOR(*)
-	OPERATOR(/)
+    template<class RHS> friend Derived operator+ (const Derived& lhs, const RHS& rhs) { Derived val{ lhs }; return val += rhs; }
+	template<class RHS> friend Derived operator- (const Derived& lhs, const RHS& rhs) { Derived val{ lhs }; return val -= rhs; }
+	template<class RHS> friend Derived operator* (const Derived& lhs, const RHS& rhs) { Derived val{ lhs }; return val *= rhs; }
+	template<class RHS> friend Derived operator/ (const Derived& lhs, const RHS& rhs) { Derived val{ lhs }; return val /= rhs; }
 
 	void clear()
 	{
@@ -81,6 +78,11 @@ public:
 
 	X&       at(int i)       { return data[i]; }
 	const X& at(int i) const { return data[i]; }
+
+	template<class RHS> Vector<X, N>& operator=(const RHS& rhs)
+	{
+		return GenericAlgebra<Vector<X, N>, N>::operator=(rhs);
+	}
 };
 
 template<class X, int W, int H> class Matrix : public GenericAlgebra<Matrix<X, W, H>, W*H>
